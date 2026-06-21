@@ -164,7 +164,13 @@ class AdminController extends Controller
                 throw new \RuntimeException('CLOUDINARY_URL is not set in the environment.');
             }
 
-            $configuration = Configuration::instance($cloudinaryUrl);
+            // Configuration::instance() is a singleton that only honors its
+            // argument on the very first call process-wide. Since the
+            // cloudinary-laravel package's own service provider may already
+            // have initialized it (incorrectly), we build a fresh,
+            // non-singleton Configuration here instead.
+            $configuration = new Configuration();
+            $configuration->importCloudinaryUrl($cloudinaryUrl);
             $uploadApi = new UploadApi($configuration);
 
             $result = $uploadApi->upload($file->getRealPath(), [
