@@ -20,11 +20,10 @@ use App\Models\Project;
 use App\Models\Review;
 use App\Models\SiteSetting;
 use App\Models\Skill;
-use Cloudinary\Api\Upload\UploadApi;
-use Cloudinary\Configuration\Configuration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Throwable;
@@ -164,21 +163,61 @@ class AdminController extends Controller
                 throw new \RuntimeException('CLOUDINARY_URL is not set in the environment.');
             }
 
-            // Configuration::instance() is a singleton that only honors its
-            // argument on the very first call process-wide. Since the
-            // cloudinary-laravel package's own service provider may already
-            // have initialized it (incorrectly), we build a fresh,
-            // non-singleton Configuration here instead.
-            $configuration = new Configuration();
-            $configuration->importCloudinaryUrl($cloudinaryUrl);
-            $uploadApi = new UploadApi($configuration);
+            // Manually parse cloudinary://API_KEY:API_SECRET@CLOUD_NAME
+            // We bypass the cloudinary-laravel / cloudinary_php SDKs entirely
+            // here, since they were unreliably resolving the secret in this
+            // environment despite a correctly formatted URL.
+            $parsed = parse_url($cloudinaryUrl);
 
-            $result = $uploadApi->upload($file->getRealPath(), [
+            $apiKey = $parsed['user'] ?? null;
+            $apiSecret = $parsed['pass'] ?? null;
+            $cloudName = $parsed['host'] ?? null;
+
+            if (blank($apiKey) || blank($apiSecret) || blank($cloudName)) {
+                throw new \RuntimeException('CLOUDINARY_URL could not be parsed into key, secret, and cloud name.');
+            }
+
+            $timestamp = time();
+            $publicId = Str::uuid()->toString();
+
+            // Cloudinary's signature is a SHA-1 hash of all signed
+            // parameters (alphabetically sorted, name=value joined by &)
+            // with the api_secret appended, per Cloudinary's documented
+            // signing algorithm.
+            $paramsToSign = [
                 'folder' => $folder,
-                'public_id' => Str::uuid()->toString(),
-                'resource_type' => 'auto',
-                'overwrite' => false,
-            ]);
+                'overwrite' => 'false',
+                'public_id' => $publicId,
+                'timestamp' => $timestamp,
+            ];
+            ksort($paramsToSign);
+
+            $signatureString = collect($paramsToSign)
+                ->map(fn ($value, $key) => "{$key}={$value}")
+                ->implode('&');
+
+            $signature = sha1($signatureString.$apiSecret);
+
+            $resourceType = $isPdf ? 'raw' : 'image';
+
+            $response = Http::asMultipart()->post(
+                "https://api.cloudinary.com/v1_1/{$cloudName}/{$resourceType}/upload",
+                [
+                    ['name' => 'file', 'contents' => fopen($file->getRealPath(), 'r'), 'filename' => $file->getClientOriginalName()],
+                    ['name' => 'api_key', 'contents' => $apiKey],
+                    ['name' => 'timestamp', 'contents' => (string) $timestamp],
+                    ['name' => 'signature', 'contents' => $signature],
+                    ['name' => 'folder', 'contents' => $folder],
+                    ['name' => 'public_id', 'contents' => $publicId],
+                    ['name' => 'overwrite', 'contents' => 'false'],
+                ]
+            );
+
+            if (! $response->successful()) {
+                throw new \RuntimeException('Cloudinary API responded with status '.$response->status().': '.$response->body());
+            }
+
+            $result = $response->json();
 
             $url = $result['secure_url'] ?? $result['url'] ?? null;
 
