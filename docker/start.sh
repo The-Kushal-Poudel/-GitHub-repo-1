@@ -23,8 +23,11 @@ mkdir -p \
     storage/logs \
     bootstrap/cache
 
-php artisan optimize:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 php artisan migrate --force
+php artisan cache:clear
 
 if [ "${SEED_INITIAL_DATA:-false}" = "true" ]; then
     php artisan db:seed --force
