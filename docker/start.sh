@@ -42,7 +42,6 @@ if [ -n "${ADMIN_EMAIL:-}" ] || [ -n "${ADMIN_PASSWORD:-}" ]; then
     php artisan admin:create --no-interaction
 fi
 
-php artisan config:cache
 php artisan view:cache
 
 exec php artisan serve --host=0.0.0.0 --port="${PORT}"
