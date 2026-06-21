@@ -20,6 +20,8 @@ use App\Models\Project;
 use App\Models\Review;
 use App\Models\SiteSetting;
 use App\Models\Skill;
+use Cloudinary\Api\Upload\UploadApi;
+use Cloudinary\Configuration\Configuration;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -156,7 +158,16 @@ class AdminController extends Controller
         $folder = $isPdf ? 'portfolio/documents' : 'portfolio/images';
 
         try {
-            $result = cloudinary()->uploadApi()->upload($file->getRealPath(), [
+            $cloudinaryUrl = env('CLOUDINARY_URL');
+
+            if (blank($cloudinaryUrl)) {
+                throw new \RuntimeException('CLOUDINARY_URL is not set in the environment.');
+            }
+
+            $configuration = Configuration::instance($cloudinaryUrl);
+            $uploadApi = new UploadApi($configuration);
+
+            $result = $uploadApi->upload($file->getRealPath(), [
                 'folder' => $folder,
                 'public_id' => Str::uuid()->toString(),
                 'resource_type' => 'auto',
@@ -179,6 +190,7 @@ class AdminController extends Controller
             ], 201);
         } catch (Throwable $exception) {
             Log::error('Cloudinary upload failed.', [
+                'exception_class' => get_class($exception),
                 'exception' => $exception->getMessage(),
             ]);
 
