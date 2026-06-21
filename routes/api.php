@@ -4,6 +4,22 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\PublicController;
 use Illuminate\Support\Facades\Route;
 
+// TEMPORARY DEBUG ROUTE - remove after diagnosing Cloudinary config issue
+Route::get('/debug-cloudinary', function () {
+    $url = env('CLOUDINARY_URL');
+    $configUrl = config('filesystems.disks.cloudinary.url');
+
+    return response()->json([
+        'env_CLOUDINARY_URL_present' => $url !== null && $url !== '',
+        'env_CLOUDINARY_URL_length' => $url ? strlen($url) : 0,
+        'env_CLOUDINARY_URL_starts_with' => $url ? substr($url, 0, 14) : null,
+        'env_CLOUDINARY_URL_has_at_symbol' => $url ? str_contains($url, '@') : false,
+        'config_filesystems_url_present' => $configUrl !== null && $configUrl !== '',
+        'config_matches_env' => $url === $configUrl,
+        'cloudinary_cloud_name_env' => env('CLOUDINARY_CLOUD_NAME') ? 'set' : 'not set',
+    ]);
+});
+
 Route::get('/portfolio', [PublicController::class, 'portfolio']);
 Route::get('/profile', [PublicController::class, 'profile']);
 Route::get('/projects', [PublicController::class, 'projects']);
