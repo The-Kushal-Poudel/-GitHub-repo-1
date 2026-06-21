@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/debug-cloudinary', function () {
     $url = env('CLOUDINARY_URL');
     $configUrl = config('filesystems.disks.cloudinary.url');
+    $parsed = $url ? parse_url($url) : null;
 
     return response()->json([
         'env_CLOUDINARY_URL_present' => $url !== null && $url !== '',
@@ -17,6 +18,14 @@ Route::get('/debug-cloudinary', function () {
         'config_filesystems_url_present' => $configUrl !== null && $configUrl !== '',
         'config_matches_env' => $url === $configUrl,
         'cloudinary_cloud_name_env' => env('CLOUDINARY_CLOUD_NAME') ? 'set' : 'not set',
+        'parse_url_result_keys' => $parsed ? array_keys($parsed) : null,
+        'parse_url_has_user' => isset($parsed['user']),
+        'parse_url_has_pass' => isset($parsed['pass']),
+        'parse_url_has_host' => isset($parsed['host']),
+        'parse_url_user_length' => isset($parsed['user']) ? strlen($parsed['user']) : 0,
+        'parse_url_pass_length' => isset($parsed['pass']) ? strlen($parsed['pass']) : 0,
+        'parse_url_host_value' => $parsed['host'] ?? null,
+        'secret_contains_special_chars' => $url ? (bool) preg_match('#[/+=]#', explode('@', str_replace('cloudinary://', '', $url))[0] ?? '') : null,
     ]);
 });
 
