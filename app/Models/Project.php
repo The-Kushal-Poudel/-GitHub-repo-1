@@ -20,8 +20,7 @@ class Project extends Model
         'features',
         'github_link',
         'live_link',
-        'image_url',
-        'image_alt',
+        'images',
         'status',
         'sort_order',
         'is_visible',
@@ -30,6 +29,7 @@ class Project extends Model
     protected $casts = [
         'tech_stack' => 'array',
         'features' => 'array',
+        'images' => 'array',
         'is_visible' => 'boolean',
         'sort_order' => 'integer',
     ];
