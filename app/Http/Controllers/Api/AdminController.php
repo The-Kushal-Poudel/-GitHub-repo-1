@@ -202,7 +202,7 @@ class AdminController extends Controller
 
             $signature = sha1($signatureString.$apiSecret);
 
-            $resourceType = $isPdf ? 'raw' : 'image';
+            $resourceType = 'image'; // Cloudinary can process PDFs as image, avoiding strict 'raw' delivery 401s
 
             $response = Http::asMultipart()->post(
                 "https://api.cloudinary.com/v1_1/{$cloudName}/{$resourceType}/upload",
