@@ -178,7 +178,11 @@ class AdminController extends Controller
             }
 
             $timestamp = time();
+            $extension = $file->getClientOriginalExtension();
             $publicId = Str::uuid()->toString();
+            if (!empty($extension)) {
+                $publicId .= '.' . strtolower($extension);
+            }
 
             // Cloudinary's signature is a SHA-1 hash of all signed
             // parameters (alphabetically sorted, name=value joined by &)
