@@ -34,7 +34,7 @@ class PublicController extends Controller
             'experience' => Experience::orderBy('sort_order', 'asc')->get(),
             'skills' => Skill::orderBy('sort_order', 'asc')->get(),
             'faqs' => Faq::where('is_active', true)->orderBy('sort_order', 'asc')->get(),
-            'reviews' => Review::where('is_approved', true)->latest()->get(),
+            'reviews' => Review::latest()->get(),
         ]);
     }
 
