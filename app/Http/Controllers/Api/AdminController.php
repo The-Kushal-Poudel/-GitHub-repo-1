@@ -180,7 +180,12 @@ class AdminController extends Controller
             $timestamp = time();
             $extension = $file->getClientOriginalExtension();
             $publicId = Str::uuid()->toString();
-            if (!empty($extension)) {
+            
+            $resourceType = 'auto'; // Let Cloudinary detect if it's image or raw
+
+            if (!empty($extension) && $isPdf) {
+                // For raw/auto PDF uploads, Cloudinary might need the extension in the public ID 
+                // to serve it with the correct content type.
                 $publicId .= '.' . strtolower($extension);
             }
 
@@ -201,8 +206,6 @@ class AdminController extends Controller
                 ->implode('&');
 
             $signature = sha1($signatureString.$apiSecret);
-
-            $resourceType = 'image'; // Cloudinary can process PDFs as image, avoiding strict 'raw' delivery 401s
 
             $response = Http::asMultipart()->post(
                 "https://api.cloudinary.com/v1_1/{$cloudName}/{$resourceType}/upload",
