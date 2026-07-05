@@ -104,12 +104,23 @@ class PublicController extends Controller
 
     public function storeReview(StoreReviewRequest $request)
     {
+        $googleResponse = \Illuminate\Support\Facades\Http::withToken($request->google_token)
+            ->get('https://www.googleapis.com/oauth2/v3/userinfo');
+
+        if (!$googleResponse->successful()) {
+            return response()->json(['message' => 'Invalid Google authentication token.'], 401);
+        }
+
+        $googleUser = $googleResponse->json();
+
         $review = Review::create([
-            'name' => $request->name,
+            'name' => $request->name ?: ($googleUser['name'] ?? 'Anonymous'),
             'role' => $request->role,
             'rating' => $request->rating,
             'text' => $request->text,
-            'social_link' => $request->social_link,
+            'google_id' => $googleUser['sub'] ?? null,
+            'email' => $googleUser['email'] ?? null,
+            'avatar' => $googleUser['picture'] ?? null,
             'is_approved' => false,
         ]);
 

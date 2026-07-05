@@ -27,7 +27,7 @@ class StoreReviewRequest extends FormRequest
             'role' => 'nullable|string|max:255',
             'rating' => 'required|numeric|min:1|max:5',
             'text' => 'required|string|min:5',
-            'social_link' => 'required|url|max:255',
+            'google_token' => 'required|string',
         ];
     }
 }

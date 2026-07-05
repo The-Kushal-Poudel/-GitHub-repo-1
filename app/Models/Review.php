@@ -14,7 +14,9 @@ class Review extends Model
         'role',
         'rating',
         'text',
-        'social_link',
+        'google_id',
+        'email',
+        'avatar',
         'is_approved',
     ];
 
